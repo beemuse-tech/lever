@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>てこのはたらき</title>
+<style>
+  :root{
+    --bg:#f6f3ea; --card:#fff; --ink:#2b2a33; --sub:#6b6a75; --line:#e3ddcc;
+    --left:#4f8ef7; --right:#f2706a; --ok:#2e9d5b; --wood:#e0aa62; --woodd:#b9823c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",sans-serif;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+  .wrap{max-width:980px;margin:0 auto;padding:16px}
+  h1{font-size:28px;margin:4px 0 10px}
+  .rule{background:var(--card);border:2px solid var(--line);border-radius:14px;padding:12px 16px;font-size:18px;line-height:1.7}
+  .rule b{background:#fff2b8;padding:0 4px;border-radius:4px}
+  .board{background:var(--card);border:2px solid var(--line);border-radius:14px;margin-top:12px;padding:8px}
+  svg{width:100%;height:auto;display:block;touch-action:manipulation}
+  .readout{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:stretch;margin-top:8px}
+  .card{border-radius:12px;padding:8px 12px;text-align:center;border:2px solid var(--line);background:#fff}
+  .card.L{border-color:var(--left)} .card.R{border-color:var(--right)}
+  .card .t{font-size:14px;color:var(--sub)}
+  .card .n{font-size:34px;font-weight:700;line-height:1.1}
+  .card.L .n{color:var(--left)} .card.R .n{color:var(--right)}
+  .card .f{font-size:15px;color:var(--sub);min-height:22px;word-break:break-all}
+  .status{display:flex;flex-direction:column;justify-content:center;align-items:center;min-width:170px;padding:8px 12px;
+    border-radius:12px;background:#eee;font-size:22px;font-weight:700;text-align:center}
+  .status.ok{background:#d8f3e2;color:var(--ok)}
+  .status small{font-size:14px;font-weight:400;color:var(--sub);margin-top:4px}
+  .tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+  .tray{display:flex;align-items:center;gap:10px;background:#fff8e6;border:2px dashed #e5c46b;border-radius:12px;padding:6px 12px;font-size:15px}
+  #trayW{width:46px;height:42px;touch-action:none;cursor:grab}
+  button{font:inherit;font-size:16px;padding:8px 14px;border-radius:10px;border:2px solid var(--line);background:#fff;cursor:pointer}
+  button:hover{background:#f3efe2}
+  .presets{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:15px;color:var(--sub)}
+  h2{font-size:22px;margin:22px 0 8px}
+  .tablebox{background:var(--card);border:2px solid var(--line);border-radius:14px;overflow:auto;max-height:420px}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:17px}
+  th,td{padding:9px 10px;text-align:center;border-bottom:1px solid var(--line)}
+  th{background:#faf6e8;position:sticky;top:0;font-size:15px}
+  th.L,td.L{color:var(--left)} th.R,td.R{color:var(--right)}
+  .cap{margin:0 0 8px;font-size:16px;color:var(--sub)} .cap b{color:var(--ink);background:#fff2b8;padding:0 4px;border-radius:4px}
+  th{white-space:nowrap} th.g{font-size:18px} th.mid,td.mid{background:#eaf7ef;color:var(--ok);border-left:2px solid var(--line);border-right:2px solid var(--line)}
+  tr.sub th{top:41px;font-size:13px;font-weight:400}
+  td.mid{font-size:28px;font-weight:700;white-space:nowrap} td.mid small{display:block;font-size:12px;font-weight:400}
+  td div{line-height:1.7;white-space:nowrap}
+  td.calc div{font-size:18px}
+  tr.new td{animation:flash 1.4s}
+  @keyframes flash{from{background:#fff2b8}to{background:transparent}}
+  td.empty{color:var(--sub);padding:22px}
+  [hidden]{display:none!important}
+  .modes{display:flex;gap:8px;margin-top:12px}
+  .modes{flex-wrap:wrap} .modes button{font-weight:700;white-space:nowrap;padding:8px 12px}
+  .modes button.on{background:#2b2a33;color:#fff;border-color:#2b2a33}
+  .quiz{margin-top:10px;border:2px solid #e5c46b;background:#fff8e6;border-radius:12px;padding:10px 14px}
+  .qhead{display:flex;justify-content:space-between;font-size:15px;color:var(--sub)}
+  .qtext{font-size:20px;font-weight:700;margin:6px 0;line-height:1.5}
+  .choices{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0}
+  .choices button{font-size:22px;font-weight:700;min-width:96px;padding:10px 16px}
+  .choices button.right{background:#d8f3e2;border-color:var(--ok)}
+  .choices button.wrong{background:#fde0de;border-color:var(--right)}
+  .qmsg{font-size:18px;min-height:26px;margin:4px 0}
+  .qmsg.ok{color:var(--ok);font-weight:700} .qmsg.ng{color:#c2413b;font-weight:700}
+  svg.quiz [id^="plus-L"],svg.qb .plus{display:none}
+  svg.quiz .w[data-rm^="L"],svg.qb .w{cursor:default}
+  .chips{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0}
+  .chip{min-width:120px;text-align:center;touch-action:none;border-width:3px;padding:6px 14px;line-height:1.3}
+  .chip b{display:block;font-size:24px} .chip small{font-size:12px;color:var(--sub)}
+  .chip.sel{background:#fff2b8;box-shadow:0 0 0 3px #f5c542} .chip.used{opacity:.45}
+  .hintline{font-size:14px;color:var(--sub);margin:2px 0 4px}
+  #tsvg .blank{cursor:pointer} #tsvg.pick .blank rect{stroke:#e5a000;stroke-width:3} #tsvg .blank.hotb rect{fill:#fff2b8}
+  .ghostchip{position:fixed;pointer-events:none;z-index:9;transform:translate(-50%,-50%);padding:6px 16px;border-radius:10px;
+    background:#fff;border:3px solid;font-size:22px;font-weight:700;box-shadow:0 4px 10px rgba(0,0,0,.2)}
+  .ghost{position:fixed;pointer-events:none;z-index:9;width:46px;height:42px;transform:translate(-50%,-50%)}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#2e9d5b;color:#fff;padding:10px 18px;
+    border-radius:20px;font-size:17px;opacity:0;transition:opacity .3s;pointer-events:none}
+  .toast.on{opacity:1}
+  .plus{cursor:pointer} .plus:hover circle,.plus.hot circle{fill:#fff2b8}
+  .w{cursor:pointer}
+  @media(max-width:640px){.readout{grid-template-columns:1fr 1fr}.status{grid-column:1/3;order:-1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚖️ てこのはたらき</h1>
+  <div class="rule">
+    てこは <b>重さ×位置(支点からの きょり)</b> が、<b>左と右で 同じ</b>になると つりあうよ。<br>
+    おもりを のせて、つりあうところを さがしてみよう。つりあうと 表に のるよ。
+  </div>
+
+  <div class="modes">
+    <button id="modeFree" class="on">自由に 実験</button>
+    <button id="modeQuiz">🎯 クイズ</button>
+    <button id="modeTool">🔧 道具の てこ</button>
+  </div>
+
+  <div class="board" id="toolPanel" hidden>
+    <div class="qhead"><span id="tnum"></span><span id="tscore"></span></div>
+    <div class="qtext" id="ttext"></div>
+    <svg id="tsvg" viewBox="0 0 600 320" role="img" aria-label="道具の絵"></svg>
+    <div class="hintline">下の ボタンを おしてから「？」を おす。または、ボタンを「？」まで ドラッグしてね。</div>
+    <div class="chips" id="chips"></div>
+    <div class="qmsg" id="tmsg"></div>
+    <div class="tools">
+      <button id="tcheck">答え合わせ</button>
+      <button id="treset">やり直す</button>
+      <button id="tshow">答えを 見る</button>
+      <button id="tnext" hidden>次の 道具 ▶</button>
+    </div>
+  </div>
+
+  <div class="board" id="board">
+    <svg id="svg" viewBox="0 0 900 740" role="img" aria-label="てこ">
+      <g id="ground">
+        <rect x="441" y="170" width="18" height="528" rx="6" fill="#8d8a99"/>
+        <rect x="360" y="692" width="180" height="16" rx="7" fill="#6f6c7c"/>
+      </g>
+      <g id="arm"></g>
+      <g id="layer"></g>
+    </svg>
+    <div class="readout">
+      <div class="card L"><div class="t">左の てこを かたむける はたらき(重さ×位置)</div><div class="n" id="nL">0</div><div class="f" id="fL">&nbsp;</div></div>
+      <div class="status" id="status">おもりを のせてみよう</div>
+      <div class="card R"><div class="t">右の てこを かたむける はたらき(重さ×位置)</div><div class="n" id="nR">0</div><div class="f" id="fR">&nbsp;</div></div>
+    </div>
+    <div class="quiz" id="quiz" hidden>
+      <div class="qhead"><span id="qnum"></span><span id="qscore"></span></div>
+      <div class="qtext" id="qtext"></div>
+      <div class="choices" id="qchoices"></div>
+      <div class="qmsg" id="qmsg"></div>
+      <div class="tools">
+        <button id="qhint">ヒント</button>
+        <button id="qshow">答えを 見る</button>
+        <button id="qnext" hidden>次の 問題 ▶</button>
+      </div>
+    </div>
+    <div class="tools">
+      <div class="tray" id="tray"><svg id="trayW" viewBox="-23 -2 46 44"><g id="trayUnit"></g></svg>
+        <span>ここから めもりに<b>ドラッグ</b>(めもりの ＋ を おしてもOK。おもりを おすと 取れるよ)</span></div>
+      <button id="clear">全部 外す</button>
+    </div>
+    <div class="tools presets">例を 出す:
+      <button data-p="0">例1</button><button data-p="1">例2</button><button data-p="2">例3</button><button data-p="3">例4</button>
+    </div>
+  </div>
+
+  <div id="tablesec">
+  <h2>つりあったときの 表</h2>
+  <p class="cap">左の「重さ×位置」を たした数と、右の 数が <b>いつも 同じ</b>に なっているよ。</p>
+  <div class="tablebox">
+    <table>
+      <thead>
+        <tr><th class="L g" colspan="2">左</th><th class="mid g">同じ!</th><th class="R g" colspan="2">右</th></tr>
+        <tr class="sub"><th class="L">おもりの 場所</th><th class="L">重さ×位置</th><th class="mid">はたらき</th><th class="R">重さ×位置</th><th class="R">おもりの 場所</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div class="tools"><button id="clearTable">表を 消す</button></div>
+  </div>
+</div>
+<div class="toast" id="toast">つりあった! 表に のったよ</div>
+
+<script>
+const NS='http://www.w3.org/2000/svg';
+const U=66, CX=450, CY=170, N=6, MAXN=12, UNIT=36, TILT=14;
+const COL={L:'#4f8ef7',R:'#f2706a'};
+const $=id=>document.getElementById(id);
+const svg=$('svg'), armG=$('arm'), layer=$('layer');
+const KEY='lever-table-v1';
+
+let st={L:Array(N+1).fill(0),R:Array(N+1).fill(0)};
+let rows=[]; try{rows=JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){}
+let quiz={on:false,type:'A',done:false,answered:0,correct:0,b:0,wr:0,sols:[],hint:false};
+let ang=0, vel=0, target=0, stacks={}, recTimer=null, newKey=null;
+
+function el(tag,attrs,parent){
+  const e=document.createElementNS(NS,tag);
+  for(const k in attrs) e.setAttribute(k,attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+const sx=(side,i)=>(side==='L'?-1:1)*i*U;
+
+/* ---------- しくみ ---------- */
+function calc(s){
+  const parts=[]; let total=0, wt=0;
+  for(let i=1;i<=N;i++) if(s[i]){ parts.push({i,w:s[i]*10}); total+=i*s[i]*10; wt+=s[i]*10; }
+  return {parts,total,wt};
+}
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+
+/* ---------- てこ本体(かたむくところ) ---------- */
+function buildArm(){
+  armG.innerHTML='';
+  const half=N*U+36;
+  el('rect',{x:-half,y:-11,width:half*2,height:22,rx:7,fill:'#e0aa62',stroke:'#b9823c','stroke-width':2},armG);
+  for(const side of ['L','R']) for(let i=1;i<=N;i++){
+    const x=sx(side,i);
+    el('line',{x1:x,y1:-11,x2:x,y2:11,stroke:'#b9823c','stroke-width':2},armG);
+    const t=el('text',{x:x,y:6,'text-anchor':'middle','font-size':17,'font-weight':700,fill:'#5b3d12'},armG);
+    t.textContent=i;
+    el('path',{d:`M${x} 11 v5`,stroke:'#6f6c7c','stroke-width':3,fill:'none','stroke-linecap':'round'},armG);
+    const p=el('g',{class:'plus',id:`plus-${side}${i}`,'data-add':side+i},armG);
+    el('circle',{cx:x,cy:-30,r:12,fill:'#fff',stroke:COL[side],'stroke-width':2},p);
+    const pt=el('text',{x:x,y:-24,'text-anchor':'middle','font-size':20,'font-weight':700,fill:COL[side]},p);
+    pt.textContent='+';
+  }
+  el('circle',{cx:0,cy:0,r:9,fill:'#6f6c7c'},armG);
+  el('circle',{cx:0,cy:0,r:3.5,fill:'#fff'},armG);
+  const l=el('text',{x:0,y:-44,'text-anchor':'middle','font-size':14,fill:'#6b6a75'},armG);
+  l.textContent='支点';
+}
+
+function unit(parent,y0,color){
+  el('circle',{cx:0,cy:y0+3,r:3.2,fill:'none',stroke:'#555','stroke-width':1.8},parent);
+  el('rect',{x:-18,y:y0+6,width:36,height:22,rx:5,fill:color,stroke:'rgba(0,0,0,.25)','stroke-width':1.5},parent);
+  const t=el('text',{x:0,y:y0+22,'text-anchor':'middle','font-size':12,'font-weight':700,fill:'#fff'},parent);
+  t.textContent='10g';
+  el('path',{d:`M0 ${y0+28} v4 q0 4 -4 4`,stroke:'#555','stroke-width':1.8,fill:'none','stroke-linecap':'round'},parent);
+}
+
+function buildStacks(){
+  layer.innerHTML=''; stacks={};
+  for(const side of ['L','R']) for(let i=1;i<=N;i++){
+    const n=st[side][i]; if(!n) continue;
+    const g=el('g',{},layer);
+    for(let k=0;k<n;k++){
+      const w=el('g',{class:'w','data-rm':side+i},g);
+      unit(w,2+k*UNIT,COL[side]);
+    }
+    stacks[side+i]={g,x:sx(side,i)};
+  }
+  setPos();
+}
+function setPos(){
+  const r=ang*Math.PI/180, c=Math.cos(r), s=Math.sin(r);
+  armG.setAttribute('transform',`translate(${CX} ${CY}) rotate(${ang})`);
+  for(const k in stacks){
+    const {g,x}=stacks[k], y=10;
+    g.setAttribute('transform',`translate(${CX+x*c-y*s} ${CY+x*s+y*c})`);
+  }
+}
+
+/* ---------- じょうたい ---------- */
+function refresh(){
+  const L=calc(st.L), R=calc(st.R), diff=L.total-R.total;
+  target=Math.max(-TILT,Math.min(TILT,-diff/10*3));
+  $('nL').textContent=L.total; $('nR').textContent=R.total;
+  const fm=c=>c.parts.length?c.parts.map(p=>`${p.w}×${p.i}`).join(' + '):' ';
+  $('fL').textContent=fm(L); $('fR').textContent=fm(R);
+  const stEl=$('status'); stEl.className='status';
+  if(!L.wt&&!R.wt) stEl.innerHTML='おもりを のせてみよう';
+  else if(diff===0){
+    stEl.className='status ok';
+    let sub='左と右の かたむける はたらきが 同じ!';
+    if(L.parts.length===1&&R.parts.length===1){
+      const g=gcd(L.wt,R.wt), d=gcd(L.parts[0].i,R.parts[0].i);
+      sub=`おもさ ${L.wt/g}:${R.wt/g} なら きょりは ${L.parts[0].i/d}:${R.parts[0].i/d}(逆)`;
+    }
+    stEl.innerHTML=`つりあった!<small>${sub}</small>`;
+  }
+  else stEl.innerHTML=(diff>0?'左':'右')+'が 下がるよ<small>おもさか めもりを 変えてみよう</small>';
+  buildStacks();
+  checkQuiz();
+  clearTimeout(recTimer);
+  if(diff===0&&L.wt>0) recTimer=setTimeout(record,700);
+}
+
+function keyOf(L,R){return L.join(',')+'|'+R.join(',')}
+function record(){
+  if(quiz.on) return;
+  const L=calc(st.L), R=calc(st.R);
+  if(L.total!==R.total||!L.wt) return;
+  const k=keyOf(st.L,st.R);
+  if(rows.some(r=>keyOf(r.L,r.R)===k)) return;
+  rows.push({L:st.L.slice(),R:st.R.slice()});
+  newKey=k; save(); drawTable(); toast();
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(rows))}catch(e){}}
+function toast(){const t=$('toast');t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1600)}
+
+function drawTable(){
+  const tb=$('rows');
+  if(!rows.length){tb.innerHTML='<tr><td class="empty" colspan="5">まだ ありません。てこを つりあわせてみよう!</td></tr>';return}
+  const lines=(c,f)=>c.parts.map(p=>`<div>${f(p)}</div>`).join('');
+  tb.innerHTML=rows.slice().reverse().map(r=>{
+    const L=calc(r.L), R=calc(r.R), k=keyOf(r.L,r.R);
+    const where=p=>`めもり${p.i} に ${p.w}g`;
+    const sum=c=>c.parts.map(p=>`${p.w}×${p.i}`).join(' + ');
+    const mult=p=>`${p.w} × ${p.i} = ${p.w*p.i}`;
+    return `<tr class="${k===newKey?'new':''}">`+
+      `<td class="L">${lines(L,where)}</td><td class="L calc">${lines(L,mult)}</td>`+
+      `<td class="mid">${L.total}<small>左 = 右</small></td>`+
+      `<td class="R calc">${lines(R,mult)}</td><td class="R">${lines(R,where)}</td></tr>`;
+  }).join('');
+  newKey=null;
+}
+
+/* ---------- そうさ ---------- */
+function locked(side){ return quiz.on&&(side==='L'||quiz.type==='B') }
+let ac=null;
+function blip(f0,f1,dur,type,vol,delay){
+  const t=ac.currentTime+(delay||0), o=ac.createOscillator(), g=ac.createGain();
+  o.type=type; o.frequency.setValueAtTime(f0,t); o.frequency.exponentialRampToValueAtTime(f1,t+dur*0.6);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+dur+0.02);
+}
+function sound(kind){
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    if(ac.state==='suspended') ac.resume();
+    if(kind==='add'){ blip(600,980,0.16,'sine',0.28); blip(1470,1960,0.12,'triangle',0.08,0.05) }   // ぽん♪(上がる)
+    else { blip(820,300,0.2,'sine',0.28); blip(410,200,0.16,'triangle',0.08,0.03) }                   // ぷるん(下がる)
+  }catch(e){}
+}
+function add(side,i){ if(locked(side)) return; if(st[side][i]<MAXN){st[side][i]++;sound('add');refresh()} }
+function removeOne(side,i){ if(locked(side)) return; if(st[side][i]>0){st[side][i]--;sound('remove');refresh()} }
+
+svg.addEventListener('click',e=>{
+  const a=e.target.closest('[data-add]');
+  if(a){add(a.dataset.add[0],+a.dataset.add.slice(1));return}
+  const r=e.target.closest('[data-rm]');
+  if(r){removeOne(r.dataset.rm[0],+r.dataset.rm.slice(1))}
+});
+$('clear').onclick=()=>{if(quiz.on){if(quiz.type==='B')return;st.R=Array(N+1).fill(0)}else st=emptySt();refresh()};
+$('clearTable').onclick=()=>{rows=[];save();drawTable()};
+
+const presets=[
+  {L:{2:3},R:{3:2}},
+  {L:{1:6},R:{6:1}},
+  {L:{4:1,2:2},R:{2:4}},
+  {L:{3:2,5:1},R:{4:3}}
+];
+document.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{
+  const p=presets[+b.dataset.p];
+  st={L:Array(N+1).fill(0),R:Array(N+1).fill(0)};
+  for(const s of ['L','R']) for(const i in p[s]) st[s][i]=p[s][i];
+  refresh();
+});
+
+/* トレイからドラッグ */
+const trayW=$('trayW'); unit($('trayUnit'),2,'#f5a623');
+let ghost=null;
+function nearest(cx,cy){
+  const pt=svg.createSVGPoint(); pt.x=cx; pt.y=cy;
+  const p=pt.matrixTransform(svg.getScreenCTM().inverse());
+  let best=null,bd=1e9;
+  for(const side of ['L','R']) for(let i=1;i<=N;i++){
+    const d=Math.abs(p.x-(CX+sx(side,i)));
+    if(d<bd){bd=d;best={side,i}}
+  }
+  return bd<U*0.55&&p.y>CY-90?best:null;
+}
+function hot(h){
+  document.querySelectorAll('.plus.hot').forEach(e=>e.classList.remove('hot'));
+  if(h) $(`plus-${h.side}${h.i}`).classList.add('hot');
+}
+trayW.addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  trayW.setPointerCapture(e.pointerId);
+  ghost=trayW.cloneNode(true); ghost.removeAttribute('id'); ghost.classList.add('ghost');
+  ghost.style.left=e.clientX+'px'; ghost.style.top=e.clientY+'px';
+  document.body.appendChild(ghost);
+});
+trayW.addEventListener('pointermove',e=>{
+  if(!ghost) return;
+  ghost.style.left=e.clientX+'px'; ghost.style.top=e.clientY+'px';
+  hot(nearest(e.clientX,e.clientY));
+});
+function endDrag(e,drop){
+  if(!ghost) return;
+  ghost.remove(); ghost=null; hot(null);
+  if(drop){const h=nearest(e.clientX,e.clientY); if(h) add(h.side,h.i)}
+}
+trayW.addEventListener('pointerup',e=>endDrag(e,true));
+trayW.addEventListener('pointercancel',e=>endDrag(e,false));
+
+/* ゆれるアニメーション */
+function tick(){
+  vel+=(target-ang)*0.07; vel*=0.86; ang+=vel;
+  if(Math.abs(target-ang)<0.003&&Math.abs(vel)<0.003){ang=target;vel=0}
+  setPos(); requestAnimationFrame(tick);
+}
+
+/* ---------- クイズ ---------- */
+const emptySt=()=>({L:Array(N+1).fill(0),R:Array(N+1).fill(0)});
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+function solutions(S){const r=[];for(let b=1;b<=N;b++)for(let w=1;w<=MAXN;w++)if(b*w===S)r.push({b,w});return r}
+const place=c=>c.parts.map(p=>`めもり${p.i}に${p.w}g`).join('、');
+const form=c=>c.parts.map(p=>`${p.w}×${p.i}`).join(' + ')+` = ${c.total}`;
+
+function setMode(on){
+  quiz.on=on; quiz.answered=0; quiz.correct=0;
+  $('modeFree').classList.toggle('on',!on); $('modeQuiz').classList.toggle('on',on);
+  $('quiz').hidden=!on; document.querySelector('.presets').hidden=on;
+  svg.classList.toggle('quiz',on);
+  if(on) newQuestion(); else {svg.classList.remove('qb');$('tray').hidden=false;st=emptySt();refresh()}
+}
+function newQuestion(){
+  st=emptySt(); quiz.done=false; quiz.hint=false;
+  quiz.type=Math.random()<0.5?'A':'B';
+  if(quiz.type==='B'){
+    let a,wl,sols;
+    do{a=rnd(1,6);wl=rnd(1,4);sols=solutions(a*wl).filter(s=>!(s.b===a&&s.w===wl))}while(!sols.length);
+    const s=sols[rnd(0,sols.length-1)];
+    st.L[a]=wl; quiz.b=s.b; quiz.wr=s.w;
+    const cs=new Set([s.w]);
+    [s.w+1,s.w-1,s.w*2,Math.round(s.w/2),s.w+2,s.w-2].sort(()=>Math.random()-.5).forEach(c=>{if(cs.size<4&&c>=1&&c<=MAXN)cs.add(c)});
+    for(let c=1;cs.size<4;c++)cs.add(c);
+    $('qchoices').innerHTML=[...cs].sort(()=>Math.random()-.5).map(c=>`<button data-c="${c}">${c*10}g</button>`).join('');
+  } else {
+    let S,sols;
+    do{
+      st.L=Array(N+1).fill(0);
+      for(let j=rnd(1,2);j>0;j--) st.L[rnd(1,6)]+=rnd(1,3);
+      S=calc(st.L).total; sols=solutions(S/10*1);
+    }while(!sols.length||S<40);
+    quiz.sols=sols; $('qchoices').innerHTML='';
+  }
+  svg.classList.toggle('qb',quiz.type==='B');
+  $('tray').hidden=quiz.type==='B';
+  $('qshow').hidden=quiz.type==='B';
+  $('qnext').hidden=true; $('qhint').hidden=false;
+  setMsg('');
+  const lt=place(calc(st.L));
+  $('qtext').textContent=quiz.type==='B'
+    ?`左は ${lt}。右の めもり${quiz.b}に 何gの おもりを つるすと つりあうかな? 下から えらぼう。`
+    :`左に おもりが ついているよ(${lt})。右に おもりを のせて、つりあわせよう!`;
+  quizHead(); refresh();
+}
+function quizHead(){
+  $('qnum').textContent=`${quiz.answered+(quiz.done?0:1)} 問目`;
+  $('qscore').textContent=`正解 ${quiz.correct} / ${quiz.answered}`;
+}
+function setMsg(t,cls){const m=$('qmsg');m.textContent=t;m.className='qmsg '+(cls||'')}
+function finish(ok,text){
+  quiz.done=true; quiz.answered++; if(ok) quiz.correct++;
+  setMsg(text,ok?'ok':'ng'); quizHead();
+  $('qnext').hidden=false; $('qhint').hidden=true; $('qshow').hidden=true;
+}
+function checkQuiz(){
+  if(!quiz.on||quiz.type!=='A'||quiz.done) return;
+  const L=calc(st.L),R=calc(st.R);
+  if(R.wt&&L.total===R.total) finish(true,`正解! 左 ${form(L)}、右 ${form(R)}。同じだね!`);
+}
+$('qchoices').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b||quiz.done) return;
+  const c=+b.dataset.c, ok=c===quiz.wr, T=calc(st.L).total;
+  const fix=()=>{st.R=Array(N+1).fill(0);st.R[quiz.b]=quiz.wr;refresh()};
+  b.classList.add(ok?'right':'wrong');
+  [...$('qchoices').children].forEach(x=>{x.disabled=true;if(+x.dataset.c===quiz.wr)x.classList.add('right')});
+  st.R=Array(N+1).fill(0); st.R[quiz.b]=c; refresh();
+  const done=()=>finish(ok,ok
+    ?`正解! 左 ${T} と 右 ${quiz.wr*10}×${quiz.b} = ${T} が 同じ!`
+    :`ざんねん…。正しくは ${quiz.wr*10}g。${quiz.wr*10}×${quiz.b} = ${T} で 左と 同じになるよ。`);
+  if(ok) done(); else {quiz.done=true; setTimeout(()=>{quiz.done=false;fix();done()},1800)}
+});
+$('qhint').onclick=()=>{
+  const T=calc(st.L).total;
+  setMsg(quiz.type==='B'
+    ?`左の てこを かたむける はたらきは ${T}。${T} ÷ ${quiz.b} が 右の おもさ(g)だよ。`
+    :`左の てこを かたむける はたらきは ${T}。右も 重さ×位置 が ${T} に なれば つりあうよ。`);
+};
+$('qshow').onclick=()=>{
+  const s=quiz.sols[rnd(0,quiz.sols.length-1)];
+  st.R=Array(N+1).fill(0); st.R[s.b]=s.w; quiz.done=true; refresh();
+  finish(false,`答えの 一つは めもり${s.b}に ${s.w*10}g だよ。(${s.w*10}×${s.b} = ${calc(st.L).total})`);
+};
+$('qnext').onclick=newQuestion;
+let mode='free';
+function showMode(m){
+  if(m===mode) return;
+  mode=m;
+  if(m==='tool') quiz.on=false; else setMode(m==='quiz');
+  $('modeFree').classList.toggle('on',m==='free'); $('modeQuiz').classList.toggle('on',m==='quiz'); $('modeTool').classList.toggle('on',m==='tool');
+  $('board').hidden=$('tablesec').hidden=(m==='tool');
+  $('toolPanel').hidden=(m!=='tool');
+  if(m==='tool') toolStart();
+}
+$('modeFree').onclick=()=>showMode('free');
+$('modeQuiz').onclick=()=>showMode('quiz');
+$('modeTool').onclick=()=>showMode('tool');
+
+/* ---------- 道具の てこ ---------- */
+const LAB={'支点':{c:'#3f67c9',d:'ささえる 点'},'力点':{c:'#d9473a',d:'力を 入れる 点'},'作用点':{c:'#238a4c',d:'ものに はたらく 点'}};
+const R3=(a,b,c)=>({ア:a,イ:b,ウ:c});
+const TOOLS=[
+ {name:'はさみ',use:'手で にぎって、紙を 切るよ。',
+  ans:R3('力点','支点','作用点'),
+  pts:{ア:[140,225,140,300],イ:[300,160,300,60],ウ:[470,160,470,75]},
+  why:'支点から 力点までが 長く、作用点までが 短いので、小さな 力で 切れるよ。',
+  draw:`<rect x="440" y="148" width="150" height="24" fill="#fff" stroke="#bbb"/>
+   <line x1="545" y1="125" x2="300" y2="160" stroke="#9aa0ab" stroke-width="12" stroke-linecap="round"/>
+   <line x1="545" y1="195" x2="300" y2="160" stroke="#9aa0ab" stroke-width="12" stroke-linecap="round"/>
+   <line x1="300" y1="160" x2="170" y2="205" stroke="#f08a3c" stroke-width="14" stroke-linecap="round"/>
+   <line x1="300" y1="160" x2="170" y2="115" stroke="#f08a3c" stroke-width="14" stroke-linecap="round"/>
+   <circle cx="140" cy="225" r="32" fill="none" stroke="#f08a3c" stroke-width="12"/>
+   <circle cx="140" cy="95" r="32" fill="none" stroke="#f08a3c" stroke-width="12"/>
+   <circle cx="300" cy="160" r="9" fill="#555"/>`},
+ {name:'くぎぬき',use:'持ち手を 引いて、くぎを ぬくよ。',
+  ans:R3('作用点','力点','支点'),
+  pts:{ア:[212,142,90,80,180,186],イ:[309,30,440,95],ウ:[260,219,370,290]},
+  why:'支点から 力点までが 長いので、小さな 力で くぎを ぬけるよ。',
+  draw:`<rect x="40" y="220" width="520" height="52" fill="#d9b27c" stroke="#a97d44" stroke-width="2"/>
+   <path d="M60 240 H200 M300 252 H520 M120 262 H400" stroke="#c49a62" stroke-width="2" fill="none"/>
+   <line x1="180" y1="185" x2="180" y2="226" stroke="#777" stroke-width="6"/>
+   <rect x="166" y="177" width="28" height="9" rx="2" fill="#555"/>
+   <path d="M309 30 L270 174" fill="none" stroke="#1b3a8a" stroke-width="14" stroke-linecap="butt"/>
+   <path d="M309 30 L270 174" fill="none" stroke="#4a6fc4" stroke-width="5" stroke-linecap="butt"/>
+   <path d="M270 174 L260 213 L165 188" fill="none" stroke="#c9372c" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+   <path d="M270 174 L260 213 L165 188" fill="none" stroke="#ef8a80" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+   <line x1="165" y1="188" x2="188" y2="194" stroke="#fff" stroke-width="3"/>
+   <line x1="180" y1="194" x2="180" y2="204" stroke="#777" stroke-width="6"/>`},
+ {name:'シーソー',use:'子どもが 下に おして、荷物を 上げるよ。',
+  ans:R3('作用点','支点','力点'),
+  pts:{ア:[100,183,110,270],イ:[300,200,300,297],ウ:[500,183,480,270]},
+  why:'支点から 両はしまでの きょりが 同じなので、同じ おもさで つりあうよ。',
+  draw:`<line x1="50" y1="190" x2="550" y2="190" stroke="#b8895a" stroke-width="14" stroke-linecap="round"/>
+   <polygon points="300,197 262,262 338,262" fill="#8d8a99"/><line x1="200" y1="262" x2="400" y2="262" stroke="#666" stroke-width="5"/>
+   <rect x="70" y="120" width="60" height="63" rx="4" fill="#c9a227" stroke="#8a6d10" stroke-width="2"/>
+   <text x="100" y="158" text-anchor="middle" font-size="20" font-weight="700" fill="#fff">荷物</text>
+   <circle cx="500" cy="95" r="16" fill="#ffd9b0" stroke="#c9996a" stroke-width="2"/>
+   <line x1="500" y1="111" x2="500" y2="140" stroke="#4f8ef7" stroke-width="10" stroke-linecap="round"/>
+   <polygon points="490,142 510,142 510,160 521,160 500,180 479,160 490,160" fill="#e5604f"/>`},
+ {name:'せんぬき',use:'持ち手を 持ち上げて、びんの ふたを あけるよ。',
+  ans:R3('支点','作用点','力点'),
+  pts:{ア:[118,135,100,85,102,167],イ:[252,224,330,268,208,201],ウ:[516,212,500,150,509,246]},
+  why:'支点(ふたの上)から 力点までが 長く、作用点までが 短いので、小さな 力で ふたを あけられるよ。',
+  draw:`<defs><linearGradient id="opn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f5f8"/><stop offset="1" stop-color="#a4acb8"/></linearGradient>
+   <clipPath id="opInset"><circle cx="340" cy="82" r="58"/></clipPath></defs>
+   <g id="opBase">
+    <rect x="80" y="192" width="130" height="128" fill="#bfe3d0" stroke="#7fb59c" stroke-width="2"/>
+    <path d="M90 166 H200 Q204 166 206 170 L214 196 L204.1 191 L194.3 196 L184.4 191 L174.6 196 L164.7 191 L154.9 196 L145.0 191 L135.1 196 L125.3 191 L115.4 196 L105.6 191 L95.7 196 L85.9 191 L76.0 196 L86 170 Q88 166 90 166 Z" fill="#d9473a" stroke="#962b22" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M202.0 173 L214.0 190 M185.7 173 L194.3 190 M169.4 173 L174.6 190 M153.1 173 L154.9 190 M136.9 173 L135.1 190 M120.6 173 L115.4 190 M104.3 173 L95.7 190 M88.0 173 L76.0 190" stroke="#a8332a" stroke-width="1.6" fill="none"/>
+    <path d="M92 169 H198" stroke="#f08a80" stroke-width="3" stroke-linecap="round"/>
+   </g>
+   <g id="opPlate" transform="translate(100 168) rotate(12.7) translate(0 -17.5) scale(1 0.35)">
+    <polygon points="12,-72 0,-60 0,60 12,72 150,32 174,26 174,-26 150,-32" fill="url(#opn)" stroke="#6f7886" stroke-width="6" stroke-linejoin="round"/>
+    <polygon points="24,-48 24,48 118,20 118,-20" fill="#2f3640" stroke="#2f3640" stroke-width="10" stroke-linejoin="round"/>
+   </g>
+   <g transform="translate(100 168) rotate(12.7)">
+    <path d="M192 -23 Q250 -30 300 -28 Q380 -26 430 -22 Q448 -20 448 -8 Q448 4 430 6 Q380 12 300 12 Q250 14 192 7 Z" fill="#2b2e2e" stroke="#1a1c1c" stroke-width="2"/>
+    <path d="M192 -23 Q250 -30 300 -28 Q380 -26 430 -22 Q447 -20 448 -12 Q380 -12 300 -10 Q250 -8 192 -8 Z" fill="#1f8a45"/>
+    <polygon points="172,-14 180,-26 192,-26 192,10 180,10 172,2" fill="#1c6b3a" stroke="#134d29" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M230 -20 Q300 -23 380 -19" stroke="#6fcf8f" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.8"/>
+   </g>
+   <g id="opClaw">
+    <path d="M219 193 V201 H195" fill="none" stroke="#5f6773" stroke-width="9" stroke-linecap="butt" stroke-linejoin="miter"/>
+    <path d="M219 193 V201 H195" fill="none" stroke="#c6ccd5" stroke-width="4" stroke-linecap="butt" stroke-linejoin="miter"/>
+   </g>
+   <line x1="218" y1="203" x2="289" y2="118" stroke="#888" stroke-width="1.5" stroke-dasharray="4 3"/>
+   <line x1="218" y1="203" x2="316" y2="138" stroke="#888" stroke-width="1.5" stroke-dasharray="4 3"/>
+   <circle cx="340" cy="82" r="58" fill="#fff"/>
+   <g clip-path="url(#opInset)"><g transform="translate(340 82) scale(3.3) translate(-209 -192)"><use href="#opBase"/><use href="#opPlate"/><use href="#opClaw"/></g></g>
+   <circle cx="340" cy="82" r="58" fill="none" stroke="#777" stroke-width="2"/>
+   <text x="340" y="158" text-anchor="middle" font-size="13" font-weight="700" fill="#555">爪が ふちの 下に ひっかかる</text>
+   <polygon points="470,312 490,312 490,292 500,292 480,272 460,292 470,292" fill="#f4b183" stroke="#c9996a" stroke-width="2"/>`},
+ {name:'ピンセット',use:'指で つまんで、小さな ものを はさむよ。',
+  ans:R3('力点','作用点','支点'),
+  pts:{ア:[300,175,210,275],イ:[548,157,500,70],ウ:[88,160,90,245]},
+  why:'支点から 力点までが 短く、作用点までが 長いので、力は 大きく なるけれど、先を 細かく 動かせるよ。',
+  draw:`<defs><linearGradient id="tw" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f1f3f6"/><stop offset="1" stop-color="#9aa3b0"/></linearGradient>
+   <path id="twArm" d="M96 150 L430 134 L548 154 L548 160 L430 142 L96 162 Z"/></defs>
+   <use href="#twArm" fill="url(#tw)" stroke="#5f6773" stroke-width="2" stroke-linejoin="round"/>
+   <use href="#twArm" fill="url(#tw)" stroke="#5f6773" stroke-width="2" stroke-linejoin="round" transform="translate(0 320) scale(1 -1)"/>
+   <rect x="64" y="150" width="50" height="20" rx="8" fill="url(#tw)" stroke="#5f6773" stroke-width="2"/>
+   <path d="M170 142 v-7 M184 141 v-7 M198 141 v-7 M212 140 v-7 M226 139 v-7 M170 178 v7 M184 179 v7 M198 179 v7 M212 180 v7 M226 181 v7" stroke="#7d8591" stroke-width="2"/>
+   <polygon points="290,98 310,98 310,118 320,118 300,136 280,118 290,118" fill="#f4b183" stroke="#c9996a" stroke-width="2"/>
+   <polygon points="290,222 310,222 310,202 320,202 300,184 280,202 290,202" fill="#f4b183" stroke="#c9996a" stroke-width="2"/>`},
+ {name:'つめきり',use:'指で レバーを 下に おして、つめを 切るよ。(下の 部分の てこを 考えよう)',
+  ans:R3('支点','力点','作用点'),
+  pts:{ア:[60,125,80,60,102,190],イ:[330,125,330,60,362,184],ウ:[540,125,500,60,540,200]},
+  why:'上の レバーの 作用点が、下の てこの 力点に なるよ。二つの てこを つなげて、小さな 力で つめを 切れるんだね。',
+  draw:`<rect x="96" y="206" width="455" height="12" rx="4" fill="#9aa3b0" stroke="#6f7886" stroke-width="2"/>
+   <rect x="96" y="184" width="455" height="12" rx="4" fill="#aab2bd" stroke="#6f7886" stroke-width="2"/>
+   <rect x="88" y="184" width="26" height="34" rx="7" fill="#7d8591" stroke="#555" stroke-width="2"/>
+   <rect x="520" y="204" width="42" height="9" rx="2" fill="#6f7886"/>
+   <rect x="520" y="189" width="42" height="9" rx="2" fill="#6f7886"/>
+   <line x1="500" y1="176" x2="120" y2="146" stroke="#7d8591" stroke-width="15" stroke-linecap="round"/>
+   <line x1="500" y1="176" x2="120" y2="146" stroke="#e3e7ee" stroke-width="9" stroke-linecap="round"/>
+   <circle cx="362" cy="178" r="6" fill="#7d8591"/>
+   <circle cx="500" cy="176" r="7" fill="#444"/>
+   <polygon points="110,90 130,90 130,124 141,124 120,145 99,124 110,124" fill="#f4b183" stroke="#c9996a" stroke-width="2"/>`},
+ {name:'一輪車',use:'持つところを 上げて、荷物を 運ぶよ。',
+  ans:R3('支点','力点','作用点'),
+  pts:{ア:[150,235,70,130],イ:[540,150,500,235],ウ:[290,172,290,45]},
+  why:'支点(車輪)から 力点までが 長く、作用点(荷物)までが 短いので、小さな 力で 持ち上げられるよ。',
+  draw:`<line x1="30" y1="280" x2="570" y2="280" stroke="#999" stroke-width="3"/>
+   <line x1="150" y1="235" x2="215" y2="205" stroke="#666" stroke-width="10" stroke-linecap="round"/>
+   <line x1="385" y1="198" x2="540" y2="150" stroke="#c47f3d" stroke-width="12" stroke-linecap="round"/>
+   <polygon points="190,150 410,140 385,198 215,205" fill="#7da7d9" stroke="#4a6fa0" stroke-width="3"/>
+   <circle cx="290" cy="118" r="24" fill="#9a9a9a" stroke="#666" stroke-width="2"/>
+   <circle cx="150" cy="235" r="45" fill="#444"/><circle cx="150" cy="235" r="26" fill="#ddd"/>
+   <circle cx="540" cy="150" r="10" fill="#333"/>`}
+];
+let tq={order:[],pos:0,placed:{},res:{},sel:null,done:false,first:true,answered:0,correct:0};
+const LABELS=['支点','力点','作用点'];
+$('chips').innerHTML=LABELS.map(l=>`<button class="chip" data-label="${l}" style="border-color:${LAB[l].c}"><b style="color:${LAB[l].c}">${l}</b><small>${LAB[l].d}</small></button>`).join('');
+
+function toolStart(){
+  tq.order=[...TOOLS.keys()].sort(()=>Math.random()-.5); tq.pos=0; tq.answered=0; tq.correct=0; loadTool();
+}
+function loadTool(){
+  tq.placed={}; tq.res={}; tq.sel=null; tq.done=false; tq.first=true;
+  const T=TOOLS[tq.order[tq.pos]];
+  $('ttext').textContent=`「${T.name}」の ア・イ・ウに、支点・力点・作用点を 入れよう。${T.use}`;
+  $('tnext').hidden=true; $('tcheck').hidden=false; $('treset').hidden=false; $('tshow').hidden=false;
+  setTMsg(''); drawTool();
+}
+function setTMsg(t,cls){const m=$('tmsg');m.textContent=t;m.className='qmsg '+(cls||'')}
+function drawTool(){
+  const T=TOOLS[tq.order[tq.pos]];
+  let h=T.draw;
+  for(const id of ['ア','イ','ウ']){
+    const [x,y,bx,by,cx,cy]=T.pts[id];
+    const lab=tq.placed[id], r=tq.res[id];
+    const col=lab?LAB[lab].c:'#999';
+    const edge=r===true?'#238a4c':r===false?'#d9473a':col;
+    h+=`<line x1="${bx}" y1="${by}" x2="${x}" y2="${y}" stroke="#555" stroke-width="2" stroke-dasharray="5 4"/>`;
+    if(cx!==undefined) h+=`<line x1="${x}" y1="${y}" x2="${cx}" y2="${cy}" stroke="#333" stroke-width="2.5"/><circle cx="${cx}" cy="${cy}" r="5" fill="#fff" stroke="#333" stroke-width="2.5"/>`;
+    h+=`<circle cx="${x}" cy="${y}" r="12" fill="#333"/><text x="${x}" y="${y+5}" text-anchor="middle" font-size="14" font-weight="700" fill="#fff">${id}</text>`;
+    h+=`<g class="blank" data-blank="${id}"><rect x="${bx-52}" y="${by-20}" width="104" height="40" rx="10" fill="${lab?'#fff':'#fffdf3'}" stroke="${edge}" stroke-width="${r===undefined?2.5:4}" ${lab?'':'stroke-dasharray="6 4"'}/>`+
+       `<text x="${bx}" y="${by+8}" text-anchor="middle" font-size="${lab?22:24}" font-weight="700" fill="${lab?col:'#aaa'}">${lab||'？'}</text></g>`;
+    if(r!==undefined) h+=`<text x="${bx+66}" y="${by+10}" text-anchor="middle" font-size="30" font-weight="700" fill="${r?'#238a4c':'#d9473a'}">${r?'○':'×'}</text>`;
+  }
+  $('tsvg').innerHTML=h;
+  $('tsvg').setAttribute('viewBox',T.vb||'0 0 600 320');
+  $('tsvg').classList.toggle('pick',!!tq.sel);
+  document.querySelectorAll('.chip').forEach(b=>{
+    b.classList.toggle('sel',tq.sel===b.dataset.label);
+    b.classList.toggle('used',Object.values(tq.placed).includes(b.dataset.label));
+  });
+  $('tnum').textContent=`${tq.pos+1} / ${TOOLS.length} 問目`;
+  $('tscore').textContent=`正解 ${tq.correct} / ${tq.answered}`;
+}
+function placeLabel(label,id){
+  if(tq.done) return;
+  for(const k in tq.placed) if(tq.placed[k]===label){delete tq.placed[k];delete tq.res[k]}
+  tq.placed[id]=label; delete tq.res[id]; tq.sel=null;
+  sound('add'); setTMsg(''); drawTool();
+}
+$('tsvg').addEventListener('click',e=>{
+  const b=e.target.closest('[data-blank]'); if(!b||tq.done) return;
+  const id=b.dataset.blank;
+  if(tq.sel) placeLabel(tq.sel,id);
+  else if(tq.placed[id]){delete tq.placed[id];delete tq.res[id];sound('remove');drawTool()}
+});
+let cdrag=null;
+$('chips').addEventListener('pointerdown',e=>{
+  const b=e.target.closest('.chip'); if(!b||tq.done) return;
+  cdrag={label:b.dataset.label,x:e.clientX,y:e.clientY,moved:false,ghost:null,hot:null};
+  b.setPointerCapture(e.pointerId);
+});
+$('chips').addEventListener('pointermove',e=>{
+  if(!cdrag) return;
+  if(!cdrag.moved&&Math.hypot(e.clientX-cdrag.x,e.clientY-cdrag.y)>8){
+    cdrag.moved=true;
+    const g=document.createElement('div'); g.className='ghostchip'; g.textContent=cdrag.label; g.style.borderColor=LAB[cdrag.label].c; g.style.color=LAB[cdrag.label].c;
+    document.body.appendChild(g); cdrag.ghost=g;
+  }
+  if(cdrag.ghost){
+    cdrag.ghost.style.left=e.clientX+'px'; cdrag.ghost.style.top=e.clientY+'px';
+    const el=document.elementFromPoint(e.clientX,e.clientY), bl=el&&el.closest('[data-blank]');
+    if(cdrag.hot) cdrag.hot.classList.remove('hotb');
+    cdrag.hot=bl; if(bl) bl.classList.add('hotb');
+  }
+});
+function endChip(e,drop){
+  if(!cdrag) return;
+  const c=cdrag; cdrag=null;
+  if(c.ghost){
+    c.ghost.remove();
+    const el=document.elementFromPoint(e.clientX,e.clientY), bl=el&&el.closest('[data-blank]');
+    if(drop&&bl) placeLabel(c.label,bl.dataset.blank); else drawTool();
+  } else if(drop){ tq.sel=tq.sel===c.label?null:c.label; drawTool() }
+}
+$('chips').addEventListener('pointerup',e=>endChip(e,true));
+$('chips').addEventListener('pointercancel',e=>endChip(e,false));
+
+function fanfare(){try{blip(660,990,.14,'sine',.25);blip(990,1320,.16,'sine',.25,.12);blip(1320,1760,.22,'triangle',.18,.24)}catch(e){}}
+function countFirst(ok){ if(tq.first){tq.first=false;tq.answered++;if(ok)tq.correct++} }
+function finishTool(){ tq.done=true; $('tnext').hidden=false; $('tcheck').hidden=true; $('treset').hidden=true; $('tshow').hidden=true;
+  $('tnext').textContent=tq.pos===TOOLS.length-1?'もう一度 はじめる ↻':'次の 道具 ▶'; }
+$('tcheck').onclick=()=>{
+  if(tq.done) return;
+  const T=TOOLS[tq.order[tq.pos]];
+  if(Object.keys(tq.placed).length<3){setTMsg('ア・イ・ウの 3つ ぜんぶに 入れてから 答え合わせしてね。','ng');return}
+  let all=true;
+  for(const id of ['ア','イ','ウ']){const ok=tq.placed[id]===T.ans[id]; tq.res[id]=ok; if(!ok) all=false}
+  countFirst(all);
+  if(all){ finishTool(); drawTool(); fanfare(); setTMsg('正解! '+T.why,'ok') }
+  else { drawTool(); sound('remove'); setTMsg('おしい! ×の ところを 入れかえてみよう。','ng') }
+};
+$('treset').onclick=()=>{ if(tq.done) return; tq.placed={}; tq.res={}; tq.sel=null; setTMsg(''); drawTool() };
+$('tshow').onclick=()=>{
+  if(tq.done) return;
+  const T=TOOLS[tq.order[tq.pos]];
+  tq.placed={...T.ans}; tq.res={}; countFirst(false); finishTool(); drawTool();
+  setTMsg('正しい 答えは こうだよ。'+T.why,'ng');
+};
+$('tnext').onclick=()=>{ if(tq.pos>=TOOLS.length-1) toolStart(); else {tq.pos++; loadTool()} };
+
+
+buildArm(); drawTable(); refresh(); tick();
+</script>
+</body>
+</html>
